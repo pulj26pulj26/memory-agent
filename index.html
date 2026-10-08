@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>记忆特工队 · 小本本大冒险</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:#FFF9EF;color:#33261A;min-height:100vh}
+#app{max-width:680px;margin:0 auto;padding:16px 16px 40px}
+.hidden{display:none!important}
+/* ===== 通用 ===== */
+.btn{display:block;width:100%;padding:15px 20px;border:none;border-radius:14px;font-size:17px;font-weight:bold;cursor:pointer;transition:transform .08s;margin-top:12px}
+.btn:active{transform:scale(.96)}
+.btn-orange{background:#E8703A;color:#fff}
+.btn-green{background:#3F7A5A;color:#fff}
+.btn-soft{background:#F6EBD8;color:#33261A;border:2px solid #EAD9BE}
+.btn:disabled{opacity:.45;cursor:default}
+.kicker{font-size:12px;letter-spacing:2px;color:#E8703A;font-weight:bold}
+h1.title{font-size:30px;line-height:1.3;margin:8px 0 4px}
+.sub{color:#8A7A66;font-size:15px;line-height:1.7}
+.hairline{height:2px;background:#EAD9BE;border-radius:2px;margin:14px 0}
+/* ===== 机器人气泡 ===== */
+.robot-row{display:flex;align-items:flex-start;gap:10px;margin:14px 0}
+.robot-face{width:52px;height:52px;flex:0 0 52px;background:#3F7A5A;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 3px 0 #2c5942}
+.bubble{position:relative;background:#fff;border:2px solid #EAD9BE;border-radius:14px;padding:12px 14px;font-size:15px;line-height:1.7;flex:1;min-height:52px}
+.bubble:before{content:"";position:absolute;left:-10px;top:16px;border:5px solid transparent;border-right:8px solid #EAD9BE}
+.bubble b{color:#E8703A}
+.bubble .gate{color:#3F7A5A;font-weight:bold}
+/* ===== 故事卡 ===== */
+.card-stage{margin:6px 0 4px}
+.story-card{background:#fff;border:3px solid #E8703A;border-radius:18px;padding:26px 20px;text-align:center;box-shadow:0 4px 0 #EAD9BE;min-height:130px;display:flex;flex-direction:column;justify-content:center;gap:8px}
+.story-card .emo{font-size:46px}
+.story-card .txt{font-size:19px;line-height:1.7;font-weight:bold}
+.story-card.shake{animation:shake .35s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.progress{font-size:13px;color:#8A7A66;text-align:center;margin-top:8px}
+/* ===== 小本本 ===== */
+.notebook{background:#F6EBD8;border:2px solid #EAD9BE;border-radius:16px;padding:12px;margin-top:14px}
+.nb-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.nb-title{font-size:14px;font-weight:bold;color:#3F7A5A}
+.nb-cap{font-size:12px;color:#8A7A66}
+.slots{display:flex;gap:8px}
+.slot{flex:1;background:#FFF9EF;border:2px dashed #EAD9BE;border-radius:12px;min-height:86px;padding:8px;font-size:12.5px;line-height:1.5;color:#8A7A66;display:flex;flex-direction:column;gap:4px;cursor:default;transition:transform .1s}
+.slot .pg{font-size:11px;font-weight:bold;color:#c9b596}
+.slot.filled{background:#fff;border:2px solid #3F7A5A;color:#33261A;cursor:pointer}
+.slot.filled:active{transform:scale(.95)}
+.slot.pickme{border-color:#E8703A;box-shadow:0 0 0 3px rgba(232,112,58,.25);animation:pulse 1s infinite}
+.slot.flash{animation:flash .6s}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+@keyframes flash{0%{background:#F4B942}100%{background:#fff}}
+/* ===== 决策按钮 ===== */
+.decide-row{display:flex;gap:10px;margin-top:14px}
+.decide-row .btn{margin-top:0;flex:1;font-size:16px;padding:16px 8px}
+/* ===== 反馈 ===== */
+.feedback{margin-top:12px;border-radius:12px;padding:12px 14px;font-size:14.5px;line-height:1.7;display:none}
+.feedback.show{display:block}
+.feedback.good{background:#e8f3ec;border:2px solid #3F7A5A;color:#2c5942}
+.feedback.bad{background:#fdeee4;border:2px solid #E8703A;color:#a34d22}
+/* ===== 遮罩（过关/徽章） ===== */
+#overlay{position:fixed;inset:0;background:rgba(51,38,26,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.ov-card{background:#FFF9EF;border-radius:20px;padding:28px 22px;max-width:420px;width:100%;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.ov-emo{font-size:64px}
+.ov-title{font-size:24px;font-weight:bold;color:#E8703A;margin:8px 0}
+.ov-body{font-size:15px;line-height:1.8;color:#33261A;margin-bottom:8px}
+/* ===== 证书 ===== */
+.cert{background:#fff;border:4px solid #F4B942;border-radius:18px;padding:26px 20px;text-align:center;margin-top:16px;box-shadow:0 4px 0 #EAD9BE}
+.cert h2{font-size:24px;color:#E8703A;margin-bottom:6px}
+.cert .cert-name{font-size:15px;color:#8A7A66;margin-bottom:12px}
+.badge-row{display:flex;justify-content:center;gap:14px;margin:14px 0}
+.badge-item{width:96px;background:#F6EBD8;border-radius:14px;padding:12px 6px;font-size:12px;line-height:1.5}
+.badge-item .be{font-size:34px}
+.cert .stats{font-size:14px;color:#3F7A5A;font-weight:bold;line-height:1.8}
+.home-badges{display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.home-badge{font-size:12px;background:#F6EBD8;border-radius:999px;padding:6px 12px;color:#8A7A66}
+.home-badge.got{background:#3F7A5A;color:#fff}
+.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#33261A;color:#FFF9EF;padding:10px 18px;border-radius:999px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:99}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- 首页 -->
+  <div id="scr-home">
+    <div style="text-align:center;margin-top:18px">
+      <div class="kicker">AI 十哲 · 第三课配套游戏</div>
+      <h1 class="title">记忆特工队<br>小本本大冒险</h1>
+      <div class="sub">机器人小忆只有 3 页小本本<br>什么该记？什么该擦？你说了算！</div>
+    </div>
+    <div class="robot-row">
+      <div class="robot-face">🤖</div>
+      <div class="bubble" id="home-bubble"></div>
+    </div>
+    <div style="background:#F6EBD8;border-radius:14px;padding:14px 16px;font-size:14px;line-height:1.9;margin-top:6px">
+      🎮 <b>三关任务</b><br>
+      第一关 · 小狗旺旺的日常 —— 学会<b>挑重点记</b><br>
+      第二关 · 小明的苹果 —— 学会<b>擦掉旧的写新的</b><br>
+      第三关 · 谁偷吃了蛋糕 —— 用本本<b>破案</b>！
+    </div>
+    <button class="btn btn-orange" id="btn-start">🕵️ 出发，当记忆特工！</button>
+    <div class="home-badges" id="home-badges"></div>
+    <div style="text-align:center;font-size:12px;color:#8A7A66;margin-top:16px">和孩子一起学AI · 会忘，才会记 📒</div>
+  </div>
+
+  <!-- 游戏页 -->
+  <div id="scr-play" class="hidden">
+    <div style="display:flex;justify-content:space-between;align-items:baseline">
+      <div class="kicker" id="lv-kicker">第一关</div>
+      <div class="progress" id="lv-progress"></div>
+    </div>
+    <h1 class="title" style="font-size:24px" id="lv-name"></h1>
+    <div class="hairline"></div>
+
+    <div class="robot-row">
+      <div class="robot-face">🤖</div>
+      <div class="bubble" id="play-bubble"></div>
+    </div>
+
+    <div class="card-stage">
+      <div class="story-card" id="story-card">
+        <div class="emo" id="card-emo"></div>
+        <div class="txt" id="card-txt"></div>
+      </div>
+      <div class="progress" id="card-progress"></div>
+    </div>
+
+    <div class="decide-row" id="decide-row">
+      <button class="btn btn-green" id="btn-keep">✍️ 记上本子</button>
+      <button class="btn btn-soft" id="btn-skip">🧽 不用记</button>
+    </div>
+
+    <div class="notebook">
+      <div class="nb-head">
+        <div class="nb-title">📒 小忆的小本本</div>
+        <div class="nb-cap" id="nb-cap">0 / 3 页</div>
+      </div>
+      <div class="slots" id="slots"></div>
+    </div>
+
+    <button class="btn btn-soft hidden" id="btn-none" style="margin-top:12px">🙋 本子上没有 —— 我没记下来</button>
+
+    <div class="feedback" id="feedback"></div>
+  </div>
+
+  <!-- 证书页 -->
+  <div id="scr-cert" class="hidden">
+    <div style="text-align:center;margin-top:10px">
+      <div class="kicker">全部任务完成</div>
+      <h1 class="title">记忆特工结业！</h1>
+    </div>
+    <div class="cert">
+      <div style="font-size:44px">📜</div>
+      <h2>记忆特工证书</h2>
+      <div class="cert-name">授予：出色完成三关记忆任务的小特工</div>
+      <div class="badge-row" id="cert-badges"></div>
+      <div class="stats" id="cert-stats"></div>
+      <div style="font-size:13px;color:#8A7A66;margin-top:12px;line-height:1.8">
+        你教会了小忆 LSTM 的全部本领：<br>
+        <b style="color:#3F7A5A">记住门</b> 挑重点记 · <b style="color:#3F7A5A">遗忘门</b> 该擦就擦 · <b style="color:#3F7A5A">说话门</b> 照本子回答<br>
+        <b>会忘，才会记！</b>
+      </div>
+    </div>
+    <button class="btn btn-orange" id="btn-restart">🔄 再玩一次</button>
+    <div style="text-align:center;font-size:12px;color:#8A7A66;margin-top:14px">截图发群里，找老师领奖状 🏆<br>和孩子一起学AI · AI十哲 第三课</div>
+  </div>
+
+</div>
+
+<!-- 过关遮罩 -->
+<div id="overlay" class="hidden">
+  <div class="ov-card">
+    <div class="ov-emo" id="ov-emo"></div>
+    <div class="ov-title" id="ov-title"></div>
+    <div class="ov-body" id="ov-body"></div>
+    <button class="btn btn-orange" id="btn-next">继续 ▶</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+(function(){
+'use strict';
+var AUTOTEST = location.search.indexOf('autotest') >= 0;
+
+/* ============ 关卡数据 ============ */
+var LEVELS = [
+{
+  kicker:'第一关', name:'小狗旺旺的日常',
+  intro:'你好，我是<b>小忆</b>！我只有 <b>3 页小本本</b>，记不下所有东西。下面每句话，你帮我决定：<span class="gate">✍️ 记上</span>还是<span class="gate">🧽 不记</span>。记住——<b>只记重要的！</b>',
+  badge:'记忆新星', badgeEmo:'🌟',
+  passTell:'太棒了！你没有被「棉花糖云」骗到——<b>挑重点记，就是记住门的工作！</b>',
+  cards:[
+    {emo:'🐶', text:'旺旺是一只棕色的小狗。', key:true, sub:'旺旺的颜色', entry:'旺旺是棕色的'},
+    {emo:'☁️', text:'今天的云像一只棉花糖。', key:false},
+    {emo:'🌳', text:'旺旺最喜欢在公园的草地上打滚。', key:true, sub:'旺旺的爱好', entry:'旺旺爱在公园草地打滚'},
+    {emo:'🏷️', text:'旺旺的狗牌上写着它的名字和电话。', key:true, sub:'旺旺的狗牌', entry:'狗牌上有名字和电话'},
+    {emo:'🐱', text:'路过的小猫「喵」了一声。', key:false}
+  ],
+  quiz:[
+    {q:'旺旺是什么颜色的？', match:'旺旺的颜色', tell:'对啦！本子上写得清清楚楚——说话门就是这么工作的：<b>照本子回答</b>！'},
+    {q:'旺旺最喜欢在哪里打滚？', match:'旺旺的爱好', tell:'满分！关键信息都记下来了，一条没丢！'}
+  ]
+},
+{
+  kicker:'第二关', name:'小明的苹果',
+  intro:'这一关，苹果会<b>一路搬家</b>！本子上记着旧位置怎么办？<span class="gate">遗忘门</span>出动：<b>擦掉旧的，写上新的</b>，本子永远是最新版！',
+  badge:'更新高手', badgeEmo:'🔄',
+  passTell:'完美！苹果搬了两次家，你的本子每次都<b>及时更新</b>——这就是遗忘门最厉害的地方！',
+  cards:[
+    {emo:'🍎', text:'早上，小明把苹果放在书桌上。', key:true, sub:'苹果在哪', entry:'苹果 → 书桌上'},
+    {emo:'🎁', text:'这个苹果是要送给奶奶的生日礼物。', key:true, sub:'苹果给谁', entry:'苹果要送给奶奶'},
+    {emo:'👕', text:'小明今天穿蓝色的校服。', key:false},
+    {emo:'🎒', text:'出门前，小明把苹果装进了饭盒袋。', key:true, update:'苹果在哪', entry:'苹果 → 饭盒袋里'},
+    {emo:'🐦', text:'路上，一只麻雀从他头顶飞过。', key:false},
+    {emo:'🧊', text:'晚上回家，小明把苹果放进了冰箱。', key:true, update:'苹果在哪', entry:'苹果 → 冰箱里'},
+    {emo:'😄', text:'同桌讲了一个超好笑的笑话。', key:false}
+  ],
+  quiz:[
+    {q:'苹果现在在哪里？', match:'苹果在哪', tell:'答对啦！因为本子<b>更新过</b>，所以答案是冰箱，不是书桌！'},
+    {q:'苹果是要送给谁的？', match:'苹果给谁', tell:'没错，是送给奶奶的生日礼物！'},
+    {q:'小明的同桌叫什么名字？', match:'none', tell:'本子上没记，就老实说「我没记下来」——<b>不瞎编</b>，这也是说话门的纪律！'}
+  ]
+},
+{
+  kicker:'第三关', name:'侦探案 · 谁偷吃了蛋糕',
+  intro:'终极任务来了，记忆侦探！奶奶大寿这天，蛋糕少了一大块。本子只有 3 页，<b>本子满了就要擦掉一页</b>——擦哪页，就看你的判断力了！',
+  badge:'记忆侦探', badgeEmo:'🕵️',
+  passTell:'破案了！你保住了关键线索、擦掉了可以擦的背景——<b>会忘，才会记</b>，你是真正的记忆侦探！',
+  cards:[
+    {emo:'🎂', text:'今天是奶奶的七十大寿，全家都很开心。', key:true, sub:'背景', entry:'今天是奶奶大寿', bg:true},
+    {emo:'🍰', text:'厨房里的蛋糕少了一大块！', key:true, sub:'案件', entry:'蛋糕少了一大块'},
+    {emo:'🐾', text:'窗台上有一串小小的脚印。', key:true, sub:'脚印', entry:'窗台有小脚印'},
+    {emo:'🌧️', text:'天气预报说明天要下雨。', key:false},
+    {emo:'🐱', text:'猫的胡子上沾着白色的奶油。', key:true, sub:'奶油', entry:'猫胡子上有奶油', fullErase:'背景'},
+    {emo:'🐟', text:'窗台的脚印闻起来有鱼干的味道。', key:true, update:'脚印', entry:'小脚印有鱼干味'},
+    {emo:'🗣️', text:'猫说：「我一整天都在晒太阳。」', key:false}
+  ],
+  quiz:[
+    {q:'谁最可能偷吃了蛋糕？（点出证据那一页）', match:'奶油', tell:'就是它！<b>猫胡子上的奶油</b>——小偷是小猫！🐱'},
+    {q:'哪一页帮你确认脚印的主人？', match:'脚印', tell:'对！脚印有<b>鱼干味</b>——两条线索拼起来，铁证如山！'},
+    {q:'蛋糕是什么时候被偷吃的？', match:'none', tell:'没人看到时间，本子上也没有——<b>承认不知道</b>，比瞎猜更专业！'}
+  ]
+}
+];
+
+/* ============ 状态 ============ */
+var S;
+function freshState(){
+  return {
+    scr:'scr-home',
+    level:0, ci:0, phase:'cards', qi:0,
+    note:[],            // [{sub, entry}]
+    mistakes:0, answered:0,
+    badges:{}, done:false
+  };
+}
+S = freshState();
+
+/* ============ 工具 ============ */
+function $(id){ return document.getElementById(id); }
+var typeTimer = null;
+function typeBubble(el, text){
+  if(typeTimer){ clearInterval(typeTimer); typeTimer = null; }
+  if(AUTOTEST){ el.innerHTML = text; return; }
+  // 简易打字机：按纯文本打，最后替换为富文本
+  var plain = text.replace(/<[^>]+>/g,'');
+  var i = 0;
+  el.textContent = '';
+  typeTimer = setInterval(function(){
+    i += 2;
+    el.textContent = plain.slice(0, i);
+    if(i >= plain.length){ clearInterval(typeTimer); typeTimer = null; el.innerHTML = text; }
+  }, 24);
+}
+var toastTimer = null;
+function toast(msg){
+  var t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 1800);
+}
+function show(id){
+  ['scr-home','scr-play','scr-cert'].forEach(function(s){
+    $(s).classList.toggle('hidden', s !== id);
+  });
+  S.scr = id;
+  window.scrollTo(0,0);
+}
+function feedback(kind, html){
+  var f = $('feedback');
+  f.className = 'feedback show ' + kind;
+  f.innerHTML = html;
+}
+function clearFeedback(){
+  var f = $('feedback');
+  f.className = 'feedback';
+  f.innerHTML = '';
+}
+
+/* ============ 渲染 ============ */
+function renderHomeBadges(){
+  var html = '';
+  LEVELS.forEach(function(L){
+    var got = S.badges[L.badge];
+    html += '<span class="home-badge' + (got ? ' got' : '') + '">' + L.badgeEmo + ' ' + L.badge + (got ? ' ✓' : '') + '</span>';
+  });
+  $('home-badges').innerHTML = html;
+}
+function renderLevelHead(){
+  var L = LEVELS[S.level];
+  $('lv-kicker').textContent = L.kicker;
+  $('lv-name').textContent = L.name;
+}
+function renderNotebook(pickme, flashIdx){
+  var html = '';
+  for(var i = 0; i < 3; i++){
+    var n = S.note[i];
+    if(n){
+      html += '<div class="slot filled' + (pickme ? ' pickme' : '') + (flashIdx === i ? ' flash' : '') + '" data-idx="' + i + '">' +
+              '<div class="pg">第 ' + (i+1) + ' 页</div><div>' + n.entry + '</div></div>';
+    } else {
+      html += '<div class="slot"><div class="pg">第 ' + (i+1) + ' 页</div><div>（空）</div></div>';
+    }
+  }
+  $('slots').innerHTML = html;
+  $('nb-cap').textContent = S.note.length + ' / 3 页';
+  if(pickme){
+    var slots = document.querySelectorAll('#slots .slot.filled');
+    for(var j = 0; j < slots.length; j++){
+      slots[j].addEventListener('click', onSlotTap);
+    }
+  }
+}
+function renderCard(){
+  var L = LEVELS[S.level];
+  var c = L.cards[S.ci];
+  $('card-emo').textContent = c.emo;
+  $('card-txt').textContent = c.text;
+  $('card-progress').textContent = '故事 ' + (S.ci+1) + ' / ' + L.cards.length;
+  $('lv-progress').textContent = '';
+}
+function renderQuiz(){
+  var L = LEVELS[S.level];
+  var q = L.quiz[S.qi];
+  $('card-emo').textContent = '❓';
+  $('card-txt').textContent = q.q;
+  $('card-progress').textContent = '提问 ' + (S.qi+1) + ' / ' + L.quiz.length;
+  $('lv-progress').textContent = '📢 说话门：点本子上的一页回答';
+}
+
+/* ============ 游戏流程 ============ */
+function startLevel(idx){
+  S.level = idx; S.ci = 0; S.qi = 0; S.phase = 'cards';
+  S.note = [];
+  renderLevelHead();
+  clearFeedback();
+  $('decide-row').classList.remove('hidden');
+  $('btn-none').classList.add('hidden');
+  renderNotebook(false);
+  renderCard();
+  show('scr-play');
+  typeBubble($('play-bubble'), LEVELS[idx].intro);
+}
+
+function curCard(){ return LEVELS[S.level].cards[S.ci]; }
+
+function decide(keep){
+  if(S.phase !== 'cards') return;
+  var c = curCard();
+  if(keep !== c.key){
+    // 判错了
+    S.mistakes++;
+    $('story-card').classList.remove('shake');
+    void $('story-card').offsetWidth;
+    $('story-card').classList.add('shake');
+    if(c.key){
+      feedback('bad', '🤔 这条很重要哦！漏掉了待会儿回答不上来——再想想？');
+    } else {
+      feedback('bad', '🤔 这条是干扰信息，记下来会白占一页本子——再想想？');
+    }
+    return;
+  }
+  // 判断正确
+  if(!keep){
+    feedback('good', '👍 好眼力！干扰信息不占地儿。');
+    afterCard();
+    return;
+  }
+  // 要记
+  if(c.update){
+    var ui = findSlot(c.update);
+    if(ui >= 0){
+      S.phase = 'update';
+      feedback('good', '✍️ 值得记！等等——本子上已经有一页「' + c.update + '」了！<b>点一下旧的那页，擦掉写新的！</b>（遗忘门出动 🧽）');
+      renderNotebook(true);
+      return;
+    }
+  }
+  if(S.note.length >= 3){
+    S.phase = 'erase';
+    feedback('good', '✍️ 值得记！可是<b>本子满啦</b>！🧽 遗忘门工作：<b>点一页擦掉它</b>，给新信息腾地方。小心，线索不能丢！');
+    renderNotebook(true);
+    return;
+  }
+  writeEntry(c, -1);
+  feedback('good', '✍️ 记上了！' + (3 - S.note.length) + ' 页空位剩余。');
+  afterCard();
+}
+function findSlot(sub){
+  for(var i = 0; i < S.note.length; i++) if(S.note[i].sub === sub) return i;
+  return -1;
+}
+function writeEntry(c, idx){
+  var e = {sub:(c.sub || c.update), entry:c.entry};
+  if(idx >= 0) S.note[idx] = e; else S.note.push(e);
+}
+function onSlotTap(ev){
+  var idx = parseInt(ev.currentTarget.getAttribute('data-idx'), 10);
+  if(S.phase === 'update'){
+    var c = curCard();
+    if(S.note[idx].sub === c.update){
+      writeEntry(c, idx);
+      S.phase = 'cards';
+      renderNotebook(false, idx);
+      feedback('good', '🧽➡️✍️ 擦掉旧的、写上新的——<b>本子永远是最新版！</b>');
+      afterCard();
+    } else {
+      S.mistakes++;
+      feedback('bad', '🙅 这页和「' + c.update + '」没关系，擦了它好信息就丢啦！点写着旧消息的那页。');
+    }
+    return;
+  }
+  if(S.phase === 'erase'){
+    var c2 = curCard();
+    if(S.note[idx].sub === c2.fullErase){
+      S.note.splice(idx, 1);
+      writeEntry(c2, -1);
+      S.phase = 'cards';
+      renderNotebook(false, S.note.length - 1);
+      feedback('good', '🧽 擦掉了背景信息，线索全保住——<b>会挑重点忘，才是真本事！</b>');
+      afterCard();
+    } else {
+      S.mistakes++;
+      feedback('bad', '🙅 这条是破案线索，不能擦！擦那条和案子关系最小的。');
+    }
+    return;
+  }
+  if(S.phase === 'quiz'){
+    answerQuiz(S.note[idx].sub);
+    return;
+  }
+}
+function afterCard(){
+  renderNotebook(S.phase !== 'cards');
+  var L = LEVELS[S.level];
+  setTimeout(function(){
+    S.ci++;
+    if(S.ci < L.cards.length){
+      clearFeedback();
+      renderCard();
+      nudge();
+    } else {
+      // 进入提问
+      S.phase = 'quiz'; S.qi = 0;
+      clearFeedback();
+      $('decide-row').classList.add('hidden');
+      $('btn-none').classList.remove('hidden');
+      renderNotebook(true);
+      renderQuiz();
+      typeBubble($('play-bubble'), '故事讲完啦！现在<b>考考小忆</b>——点本子上的一页来回答。本子上没有的，就点「我没记下来」！');
+    }
+  }, AUTOTEST ? 0 : 650);
+}
+function nudge(){
+  var hints = ['这句话重要吗？','值得占一页本子吗？','待会儿会问到的，才要记！','干扰信息别理它！'];
+  typeBubble($('play-bubble'), hints[S.ci % hints.length]);
+}
+function answerQuiz(sub){
+  var L = LEVELS[S.level];
+  var q = L.quiz[S.qi];
+  var ok = (q.match === 'none' && sub === 'none') || (q.match !== 'none' && sub === q.match);
+  if(!ok){
+    S.mistakes++;
+    $('story-card').classList.remove('shake');
+    void $('story-card').offsetWidth;
+    $('story-card').classList.add('shake');
+    if(q.match === 'none'){
+      feedback('bad', '🤔 本子上真的记着吗？再翻翻——没有就老实说「我没记下来」！');
+    } else {
+      feedback('bad', '🤔 这页回答不了这个问题——换一页试试？');
+    }
+    return;
+  }
+  S.answered++;
+  feedback('good', q.tell);
+  setTimeout(function(){
+    S.qi++;
+    if(S.qi < L.quiz.length){
+      clearFeedback();
+      renderQuiz();
+    } else {
+      levelComplete();
+    }
+  }, AUTOTEST ? 0 : 1400);
+}
+function levelComplete(){
+  var L = LEVELS[S.level];
+  S.badges[L.badge] = true;
+  S.phase = 'cards';
+  $('ov-emo').textContent = L.badgeEmo;
+  $('ov-title').textContent = '获得徽章 · ' + L.badge;
+  $('ov-body').innerHTML = L.passTell;
+  $('btn-next').textContent = (S.level < LEVELS.length - 1) ? '下一关 ▶' : '领取证书 🎓';
+  $('overlay').classList.remove('hidden');
+}
+function nextFromOverlay(){
+  $('overlay').classList.add('hidden');
+  if(S.level < LEVELS.length - 1){
+    startLevel(S.level + 1);
+  } else {
+    showCert();
+  }
+}
+function showCert(){
+  S.done = true;
+  var html = '';
+  LEVELS.forEach(function(L){
+    html += '<div class="badge-item"><div class="be">' + L.badgeEmo + '</div>' + L.badge + '</div>';
+  });
+  $('cert-badges').innerHTML = html;
+  var total = 0; LEVELS.forEach(function(L){ total += L.quiz.length; });
+  $('cert-stats').innerHTML = '答对提问 ' + S.answered + ' / ' + total + ' 题<br>小失误 ' + S.mistakes + ' 次（每次失误都让本子更聪明！）';
+  show('scr-cert');
+}
+function softRestart(){
+  var keepBadges = {};
+  S = freshState();
+  S.badges = keepBadges;
+  renderHomeBadges();
+  show('scr-home');
+  typeBubble($('home-bubble'), '嗨！我是<b>小忆</b>🤖 科学家给了我一个小本本和三个开关：<span class="gate">记住门✍️</span>、<span class="gate">遗忘门🧽</span>、<span class="gate">说话门📢</span>。可是我太小啦，还不会用——<b>你来当我的记忆特工，教教我好吗？</b>');
+}
+
+/* ============ 绑定 ============ */
+$('btn-start').addEventListener('click', function(){ startLevel(0); });
+$('btn-keep').addEventListener('click', function(){ decide(true); });
+$('btn-skip').addEventListener('click', function(){ decide(false); });
+$('btn-none').addEventListener('click', function(){ if(S.phase === 'quiz') answerQuiz('none'); });
+$('btn-next').addEventListener('click', nextFromOverlay);
+$('btn-restart').addEventListener('click', function(){
+  // 双保险：优先游戏内软重启（微信里 location.reload 会被静默拦截）
+  var done = false;
+  try{ setTimeout(function(){ if(!done){ location.reload(); } }, 450); }catch(e){}
+  softRestart();
+  done = true;
+});
+
+/* ============ 调试句柄 ============ */
+window.__DBG = { state:function(){
+  return { scr:S.scr, level:S.level, ci:S.ci, phase:S.phase, qi:S.qi,
+           note:S.note.length, subs:S.note.map(function(n){return n.sub;}).join('/'),
+           mistakes:S.mistakes, answered:S.answered,
+           badges:Object.keys(S.badges).length, done:S.done,
+           overlay: !$('overlay').classList.contains('hidden') };
+}};
+
+/* ============ 启动 ============ */
+renderHomeBadges();
+typeBubble($('home-bubble'), '嗨！我是<b>小忆</b>🤖 科学家给了我一个小本本和三个开关：<span class="gate">记住门✍️</span>、<span class="gate">遗忘门🧽</span>、<span class="gate">说话门📢</span>。可是我太小啦，还不会用——<b>你来当我的记忆特工，教教我好吗？</b>');
+})();
+</script>
+</body>
+</html>
